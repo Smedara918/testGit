@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_4b57ddb0_704f_4afb_bb84_21bebc543bb1_Output_Variables_modelOfInterestId = Array<Array<String>>
+

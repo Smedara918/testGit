@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+    <http:listener-config name="jlr-gtm-leads-quote-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="jlr-gtm-leads-quote-api-config" api="resource::059f92ac-d119-40e0-8c18-8c95b8b14bac:quote:1.0.7:raml:zip:jlr-gtm-leads-quote-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="jlr-gtm-leads-quote-api-main">
+        <http:listener config-ref="jlr-gtm-leads-quote-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="jlr-gtm-leads-quote-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\quoteApp:application\json:jlr-gtm-leads-quote-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="02148589-7a6a-4d4e-8e37-74d806be7893" message="Save Quote Request Received #[payload]" />
+        <set-variable value="#[payload]" doc:name="save SFCC Payload" doc:id="38f53ef4-d448-44fa-b17d-4cf79d5b15f0" variableName="sfccPayload" />
+        <salesforce:query doc:name="Query" doc:id="0682fb92-8081-44d6-ba2d-05256272fe90" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query><![CDATA[Select Id,Name from Account where CAP_UCP_ExternalCrmId__c=':CRM_id']]></salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	CRM_id : vars.sfccPayload.purchase.customer.id
+}]]]></salesforce:parameters>
+        </salesforce:query>
+        <set-variable value="#[payload.Id[0]]" doc:name="Person Account Id" doc:id="aad76fc3-3b1d-4981-a4b6-6408aface8ba" variableName="accountId" />
+        <set-variable value="#[payload.Name[0]]" doc:name="Person Account Name" doc:id="83b0c9c0-e384-4cdc-a0ce-0827a18bff01" variableName="accountName" />
+        <logger level="INFO" doc:name="Logger" doc:id="59eece32-5662-4932-b091-f55806ee01ee" message="Person Account details fetched #[vars.accountId] , #[vars.accountName]" />
+        <choice doc:name="Choice" doc:id="69dba7da-f0a7-453e-9b39-7020a16a9978">
+            <when expression="#[payload == []]">
+                <flow-ref doc:name="Flow Reference" doc:id="5a7b55ec-a893-4adb-8430-ea6ed7adf547" name="jlr-gtm-leads-NoQuoteCreated_SubFlow1" />
+            </when>
+            <otherwise>
+                <flow-ref doc:name="Flow Reference" doc:id="d5ec58c4-52f8-4482-9aaa-b98943a2a330" name="jlr-gtm-leads-level1-productSub_Flow" />
+            </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="jlr-gtm-leads-level1-productSub_Flow" doc:id="324222b0-5595-4b24-bc8c-1ccb6f35f0df">
+        <logger level="INFO" doc:name="Logger" doc:id="e8c763bf-6a28-43f5-aaf9-baa0945caae4" message="Fetching Level 1 Product Details " />
+        <salesforce:query doc:name="Query" doc:id="578163d0-1053-42f8-b7fc-c67c529f05ad" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query><![CDATA[select id,SAL_GVC_Parent_ProductId__r.SAL_GVC_Parent_ProductId__r.name,StockKeepingUnit,SAL_GVC_Parent_ProductId__r.SAL_GVC_Parent_ProductId__c from product2 where StockKeepingUnit = ':sellableUnitCode']]></salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	sellableUnitCode : vars.sfccPayload.purchase.vehicle.sellableUnitCode
+}]]]></salesforce:parameters>
+        </salesforce:query>
+        <set-variable value="#[payload.SAL_GVC_Parent_ProductId__r.SAL_GVC_Parent_ProductId__c[0]]" doc:name="Level 1 Product Id" doc:id="3cb142ef-fb98-4352-a24c-568f1fd523f6" variableName="level1ProductId" />
+        <set-variable value="#[payload.SAL_GVC_Parent_ProductId__r.SAL_GVC_Parent_ProductId__r.Name]" doc:name="Level 1 Product Name" doc:id="7f1d6b88-980f-4907-bf8b-939f5adf760b" variableName="level1ProductName" />
+        <logger level="INFO" doc:name="Logger" doc:id="aa39d4e0-3ec5-4917-bc2b-2561b9fca4ee" message="Level 1 Product Details #[payload]" />
+        <flow-ref doc:name="Flow Reference" doc:id="f36eba40-376c-457e-8ab1-2d348c2d0cc9" name="jlr-gtm-leads-opportunity-apiSub_Flow" />
+    </sub-flow>
+    <sub-flow name="jlr-gtm-leads-opportunity-apiSub_Flow" doc:id="4b57ddb0-704f-4afb-bb84-21bebc543bb1">
+        <logger level="INFO" doc:name="Logger" doc:id="2c54f2de-6ab4-4045-b315-3750131c2db4" message="Checking Opportunity" />
+        <logger level="INFO" doc:name="Logger" doc:id="b5667d8d-8c12-4047-a1c3-346381d7f17f" message="Check Level 1 Product details #[vars.level1ProductId] , #[vars.level1ProductName]" />
+        <salesforce:query doc:name="Query" doc:id="2e734477-31f9-49a4-89a5-3e84e288f3ba" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query><![CDATA[select id,name from Opportunity where RecordType.DeveloperName = 'SNP_GVC_Optimised_Franchise' AND AccountId = ':accountid' AND SNP_GVC_Product__c =':modelOfInterestId' AND StageName != 'Closed Won' AND StageName != 'Closed Lost']]></salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	
+	accountid : vars.accountId as String,
+	modelOfInterestId : vars.level1ProductId as String
+	
+}]]]></salesforce:parameters>
+        </salesforce:query>
+        <choice doc:name="Choice" doc:id="d8231782-4a7b-4b74-96d1-3ff32ba7ef88">
+            <when expression="#[payload == []]">
+                <logger level="INFO" doc:name="Logger" doc:id="4170b100-3d3c-460e-9456-07d59ef80125" message="Create New Opportunity" />
+                <ee:transform doc:name="Transform Message" doc:id="2be85f7f-188f-4943-a4ec-127ea6770b08">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	AccountId: vars.accountId,
+	StageName: "Negotiation",
+	CloseDate: now() as String{format:"yyyy-MM-dd"} + |P90D|,
+	SNP_GVC_Product__c: vars.level1ProductId,
+	Name: vars.accountName as String ++ " " ++ vars.level1ProductName[0] as String ++ " " ++ now() as String {format: "MMddyyyyHHmm"}
+	
+	
+}]]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+                <salesforce:create doc:name="Create" doc:id="78c49467-d287-4979-bcd2-1bc6a85d63ba" config-ref="Salesforce_Config" type="Opportunity" />
+                <set-variable value="#[payload.items.id]" doc:name="Save OpportunityId" doc:id="0aa2280e-6442-47b9-84ad-b95ecf4d1972" variableName="opportunityId" />
+                <ee:transform doc:name="Transform Message" doc:id="5dcdfb7c-a26a-4058-9b0d-c62730612b29">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	OpportunityId: payload.items.id[0] as String,
+	Product2Id: vars.level1ProductId,
+	Quantity: 1
+	
+}]]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+                <salesforce:create doc:name="Create" doc:id="a3161a3f-8de1-4c6b-a264-8fc765098a66" config-ref="Salesforce_Config" type="OpportunityLineItem" />
+                <ee:transform doc:name="Transform Message" doc:id="e2404d1d-360b-49e0-8531-dfe845d629b3">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="9816d6eb-0df6-4b72-9a72-23908561e38a" message="Output after opportunity Line Item is created #[payload]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="89185e94-0f08-4b4e-abd1-fbc4152c68e6" message="New Opportunity Created #[vars.opportunityId]" />
+            </when>
+            <otherwise>
+                <set-variable value="#[payload.Id]" doc:name="Save Opportunity Id" doc:id="4dc54022-1e29-42f3-843f-31d39b73b596" variableName="opportunityId" />
+                <set-variable value="#[payload.Name]" doc:name="Save Opportunity Name" doc:id="3cb699ca-b7f3-4abe-a86f-745064463334" variableName="opportunityName" />
+                <logger level="INFO" doc:name="Logger" doc:id="81de4fa1-e658-44b0-bd9b-e34b8df899cc" message="Opportunity Exists #[vars.opportunityId] , #[vars.opportunityName]" />
+            </otherwise>
+        </choice>
+        <logger level="INFO" doc:name="Logger" doc:id="6c62fdbe-1079-4635-b3f7-2fb014974474" message="Opportunity assigned for the Quote" />
+        <flow-ref doc:name="Flow Reference" doc:id="b56f57e8-0368-497e-a9e2-670243fd9d1a" name="jlr-gtm-leads-quote-apiSub_Flow" />
+    </sub-flow>
+    <sub-flow name="jlr-gtm-leads-quote-apiSub_Flow" doc:id="507c0b0e-be8f-4a7a-bef6-76ff0002b209">
+        <logger level="INFO" doc:name="Logger" doc:id="ca1d2310-fd0c-4a05-8d4b-56273df47925" message="Start Quote Creation" />
+        <logger level="INFO" doc:name="Logger" doc:id="436826c5-4b93-4f78-8f24-4b6bd95e52b3" message="Checking the opportunity Id #[vars.opportunityId] and Level 1 Product Id is #[vars.level1ProductId]" />
+        <ee:transform doc:name="Transform Message" doc:id="cc8106bd-9985-4b7e-996f-a8f18546b357">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	OpportunityId: vars.opportunityId[0] as String,
+	Name: vars.accountName as String ++ " " ++ vars.level1ProductName[0] as String ++ " " ++ now() as String {format: "MMddyyyyHHmm"},
+	SNP_GVC_Product__c: vars.level1ProductId
+}]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <salesforce:create doc:name="Create" doc:id="3acc079b-a18c-46a9-ae6e-1e2f379905c4" config-ref="Salesforce_Config" type="Quote" />
+        <logger level="INFO" doc:name="Logger" doc:id="927188ba-dccc-496b-8aed-c571ce7d2033" message="Quote Creation Successful #[payload.items.id]" />
+        <set-variable value="#[payload.items[0].id]" doc:name="Set Variable" doc:id="70df27a4-3373-4a0d-93a1-2c79088507a5" variableName="quoteId" />
+        <salesforce:query doc:name="Query" doc:id="60664c50-91f1-4080-a98e-eaff39c4619d" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query><![CDATA[Select QuoteNumber,Status from Quote where Id = ':quoteId']]></salesforce:salesforce-query>
+            <salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	quoteId : vars.quoteId
+}]]]></salesforce:parameters>
+        </salesforce:query>
+        <ee:transform doc:name="Transform Message" doc:id="2873daa5-b2b5-4d42-aacd-8ef902ea858e">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	quoteId: vars.quoteId as String,
+	quoteNumber: payload.QuoteNumber[0] as String,
+	opportunityId: vars.opportunityId[0] as String,
+	dateCreated: now() as String {
+		format: "yyyy-MM-dd"
+	},
+	expiryDate: now() as String{
+		format:"yyyy-MM-dd"
+	} + |P90D|,
+	quoteStatus: payload.Status[0] as String
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </sub-flow>
+    <sub-flow name="jlr-gtm-leads-NoQuoteCreated_SubFlow1" doc:id="b0d518a5-dd30-4bc1-9ac5-952e1acc65fe">
+        <ee:transform doc:name="Transform Message" doc:id="a21d40d2-13a0-4187-90f9-a5afb355fdb7">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+message: "No Account found with matching External CRM Id"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </sub-flow>
+</mule>
