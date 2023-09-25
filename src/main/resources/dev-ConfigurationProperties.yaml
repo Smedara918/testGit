@@ -1,0 +1,8 @@
+http:
+  Port: "8081"
+  listenerPath : "quoteApp"
+sfdc:
+  Username : "hmandhya@jaguarlandrover.com.gvecdev"
+  Token : "fywCcxiDgHG7ilAmoQATaCkd"
+  URL: "https://test.salesforce.com/services/Soap/u/58"
+  Password : "Mulesoft@1234"

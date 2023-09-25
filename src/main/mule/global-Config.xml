@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="e209a27d-cd59-4813-8a4a-d7452815275a" >
+		<salesforce:basic-connection username="${sfdc.Username}" password="${sfdc.Password}" securityToken="${sfdc.Token}" url="${sfdc.URL}" />
+	</salesforce:sfdc-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="3e48c2d8-634b-4743-bc89-2b9f5ca3ae82" file="dev-ConfigurationProperties.yaml" />
+	<api-gateway:autodiscovery apiId="18982079" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="bf70ed9d-55c1-4b9d-8f18-6c3d6bba1b89" flowRef="jlr-gtm-leads-quote-api-main" />
+</mule>

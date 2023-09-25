@@ -1,0 +1,11 @@
+%dw 2.0
+
+type auto_324222b0_5595_4b24_bc8c_1ccb6f35f0df_Input_Payload = Array<Account>
+type Account = {|
+  Id?: String {"typeId": "Id"}, 
+  Name?: String {"typeId": "Name"}
+|} {"label": "Account",
+"typeId": "Account"}
+
+
+
